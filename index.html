@@ -1,0 +1,407 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Memory Bank Rescored</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f4f5f8; --surface: #ffffff; --ink: #171b24; --ink-2: #4a5160; --muted: #7d8494;
+    --hair: #dfe2e9; --axis: #b9bec9; --band: #eceef3; --code-bg: #f0f2f6;
+    --mem: #0e7c73; --rec: #6b4fbb; --raw: #556070; --hist: #b26a05;
+    --good: #1a7a3c; --good-bg: #e3f3e8; --bad: #b3261e; --bad-bg: #fbe7e5; --warn: #8a5a00; --warn-bg: #fff1d6;
+    --tip-bg: #171b24; --tip-ink: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #111318; --surface: #191c23; --ink: #eef0f4; --ink-2: #bcc2cf; --muted: #868d9c;
+      --hair: #2a2e38; --axis: #3d4250; --band: #20242d; --code-bg: #1f232c;
+      --mem: #2fb3a6; --rec: #a08ce6; --raw: #98a2b3; --hist: #e0a04a;
+      --good: #4ccb78; --good-bg: #16301f; --bad: #f28b84; --bad-bg: #3a1f1d; --warn: #f0c060; --warn-bg: #3a2e12;
+      --tip-bg: #eef0f4; --tip-ink: #171b24;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #111318; --surface: #191c23; --ink: #eef0f4; --ink-2: #bcc2cf; --muted: #868d9c;
+    --hair: #2a2e38; --axis: #3d4250; --band: #20242d; --code-bg: #1f232c;
+    --mem: #2fb3a6; --rec: #a08ce6; --raw: #98a2b3; --hist: #e0a04a;
+    --good: #4ccb78; --good-bg: #16301f; --bad: #f28b84; --bad-bg: #3a1f1d; --warn: #f0c060; --warn-bg: #3a2e12;
+    --tip-bg: #eef0f4; --tip-ink: #171b24;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 16px; line-height: 1.55; padding-block: 0 80px; padding-inline: 16px; }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  .prose { max-width: 680px; }
+  h1, h2, h3 { font-family: "Newsreader", Georgia, "Times New Roman", serif; font-weight: 600; text-wrap: balance; line-height: 1.15; margin: 0; }
+  h1 { font-size: clamp(32px, 5vw, 46px); }
+  h2 { font-size: clamp(22px, 3.2vw, 28px); margin-top: 8px; }
+  h3 { font-size: 20px; margin-top: 4px; }
+  p { margin: 12px 0; }
+  .lede { font-size: 18px; color: var(--ink-2); max-width: 660px; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-top: 56px; }
+  header { padding-block: 48px 8px; border-bottom: 1px solid var(--hair); }
+  .meta { color: var(--muted); font-size: 14px; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 22px; }
+  a { color: inherit; }
+  ul.plain { padding-left: 20px; margin: 10px 0; }
+  ul.plain li { margin: 6px 0; }
+  strong { font-weight: 600; }
+
+  /* rules block */
+  .rules { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .rule { background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 16px 18px 18px; }
+  .rule .rk { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+  .rule p { margin: 0; font-size: 15px; }
+  .rule p + p { margin-top: 8px; }
+  .keep { color: var(--good); font-weight: 600; } .drop { color: var(--bad); font-weight: 600; }
+
+  .topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-top: 18px; }
+  .topics .tcol { background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 14px 16px 16px; }
+  .topics h3 { font-family: "Public Sans", system-ui, sans-serif; font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+  .topics .tsub { font-size: 13.5px; color: var(--muted); margin: 0 0 10px; }
+  .topics ul { padding-left: 18px; margin: 0; }
+  .topics li { margin: 6px 0; font-size: 14.5px; }
+  .topics li b { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; font-weight: 500; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+  .topics details { margin-top: 8px; font-size: 13.5px; color: var(--ink-2); }
+  .topics summary { cursor: pointer; color: var(--muted); }
+  .topics details p { margin: 8px 0 0; }
+  .legend-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 18px; }
+  .way { background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 14px 16px 16px; }
+  .way .sw { width: 28px; height: 6px; border-radius: 3px; margin-bottom: 10px; }
+  .way h3 { font-family: "Public Sans", system-ui, sans-serif; font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+  .way p { margin: 0; font-size: 14px; color: var(--ink-2); }
+  .c-mem { background: var(--mem); } .c-rec { background: var(--rec); } .c-raw { background: var(--raw); } .c-hist { background: var(--hist); }
+
+  /* experiment block */
+  .exp { margin-top: 44px; padding-top: 8px; }
+  .exp .parts { display: grid; grid-template-columns: 120px 1fr; gap: 8px 24px; margin-top: 14px; }
+  .exp .pk { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: var(--muted); padding-top: 4px; }
+  .exp .pv { max-width: 680px; }
+  .exp .pv p { margin: 0 0 10px; }
+  .exp .pv p:last-child { margin-bottom: 0; }
+  .exp .pv.wide { max-width: none; }
+  .exp .parts > .pk { border-top: 1px solid var(--hair); padding-top: 12px; }
+  .exp .parts > .pv { border-top: 1px solid var(--hair); padding-top: 10px; padding-bottom: 8px; }
+  .exp .parts > .pk:first-child, .exp .parts > .pk:first-child + .pv { border-top: none; padding-top: 0; }
+  .when { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .verdict { font-weight: 600; }
+  .note { border-left: 3px solid var(--mem); background: color-mix(in srgb, var(--mem) 8%, var(--surface)); padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 15px; }
+  .note b { color: var(--mem); }
+  @media (max-width: 560px) { .exp .parts { grid-template-columns: 1fr; gap: 2px; } .exp .parts > .pv { border-top: none; padding-top: 0; padding-bottom: 14px; } .exp .parts > .pk { padding-top: 12px; } }
+
+  /* input / expected / actual */
+  .iea { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .iea.two { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 760px) { .iea, .iea.two { grid-template-columns: 1fr; } }
+  .iea .col { background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 12px 14px 14px; display: flex; flex-direction: column; min-width: 0; }
+  .iea .ch { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; font-weight: 600; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .iea .ch small { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); }
+  pre.s { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; line-height: 1.5; color: var(--ink); background: var(--code-bg); border-radius: 4px; padding: 10px 12px; flex: 1; }
+  pre.s + pre.s { margin-top: 8px; }
+  pre.s .hl { background: color-mix(in srgb, var(--hist) 30%, transparent); border-radius: 2px; }
+  pre.s .who { color: var(--muted); }
+  .q { font-family: "Newsreader", Georgia, serif; font-style: italic; font-size: 17px; margin: 0 0 8px; }
+  .ft { font-size: 13.5px; color: var(--ink-2); margin-top: 8px; }
+  .ft b { color: var(--ink); font-weight: 600; }
+  .chip { display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .chip.ok { background: var(--good-bg); color: var(--good); }
+  .chip.no { background: var(--bad-bg); color: var(--bad); }
+  .chip.mid { background: var(--warn-bg); color: var(--warn); }
+  .chip.way { background: var(--band); color: var(--ink-2); }
+  .actual-list { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .actual-list .a { border-radius: 4px; background: var(--code-bg); padding: 8px 10px 10px; }
+  .actual-list .ah { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 4px; }
+  .actual-list .ah span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+  .actual-list .ah i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .actual-list pre.s { padding: 0; background: transparent; flex: none; }
+
+  /* numbers */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 12px 16px 14px; }
+  .tile .v { font-size: 30px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: "Newsreader", Georgia, serif; }
+  .tile .v.good { color: var(--good); } .tile .v.bad { color: var(--bad); }
+  .tile .l { font-size: 14px; color: var(--ink-2); margin-top: 4px; }
+  .tscroll { overflow-x: auto; }
+  table.res { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+  table.res th { text-align: left; font-weight: 600; color: var(--ink-2); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; padding: 0 12px 8px 0; border-bottom: 1px solid var(--axis); vertical-align: bottom; }
+  table.res th.n, table.res td.n { text-align: right; padding-right: 0; padding-left: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.res td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  table.res td.n { font-weight: 600; }
+  table.res td small, table.res th small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; text-transform: none; letter-spacing: 0; }
+  table.res tr:last-child td { border-bottom: none; }
+  table.res th .sw { display: block; width: 22px; height: 5px; border-radius: 3px; margin-bottom: 6px; }
+  table.res td.best { color: var(--good); }
+  table.res td.worst { color: var(--bad); }
+  table.res tr.total td { border-top: 2px solid var(--axis); background: var(--band); }
+  table.res tr.cost td { color: var(--ink-2); font-weight: 500; }
+  table.qt { min-width: 760px; }
+  table.qt td em { display: block; font-family: "Newsreader", Georgia, serif; font-style: italic; font-size: 14px; color: var(--ink-2); margin-top: 5px; max-width: 420px; }
+  table.qt td.n { font-size: 16px; }
+  figure { margin: 4px 0 0; background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 16px 18px 14px; }
+  figure .ftitle { font-weight: 600; font-size: 15px; margin: 0 0 2px; }
+  figure .fsub { color: var(--ink-2); font-size: 14px; margin: 0 0 12px; }
+  figcaption { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; font-family: inherit; }
+  svg text { fill: var(--ink-2); font-size: 13px; }
+  svg .lab { fill: var(--ink); font-weight: 500; }
+  svg .val { fill: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  svg .mut { fill: var(--muted); font-size: 12px; }
+  svg .grid { stroke: var(--hair); stroke-width: 1; }
+  svg .ceil { stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .callout { background: var(--band); border-radius: 6px; padding: 14px 18px; margin-top: 18px; max-width: 680px; }
+  .callout p { margin: 6px 0; }
+  .final { background: var(--surface); border: 1px solid var(--hair); border-radius: 6px; padding: 18px 22px; margin-top: 18px; }
+  .final ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+  .final li::marker { color: var(--muted); font-weight: 600; }
+  .changes { margin-top: 18px; border-top: 1px solid var(--hair); }
+  .changes .row { display: grid; grid-template-columns: 170px 1fr; gap: 6px 20px; padding: 12px 0; border-bottom: 1px solid var(--hair); font-size: 15px; }
+  .changes .k { font-weight: 600; }
+  @media (max-width: 520px) { .changes .row { grid-template-columns: 1fr; gap: 2px; } }
+  #tip { position: fixed; pointer-events: none; background: var(--tip-bg); color: var(--tip-ink); font-size: 13px; padding: 6px 9px; border-radius: 4px; opacity: 0; transition: opacity .12s; z-index: 10; max-width: 280px; }
+  #tip.on { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { #tip { transition: none; } }
+  :focus-visible { outline: 2px solid var(--mem); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+
+<p class="eyebrow" style="margin-top:48px">Memory Bank</p>
+<h2>What a note is</h2>
+<p class="prose">Memory Bank reads each conversation and writes short notes about the customer. When a later conversation touches the same subject, it rewrites the existing note rather than adding a second one. Below is one customer's card note under Google's default topics, across two conversations three months apart.</p>
+<div class="iea two" style="margin-top:18px; grid-template-columns: 3fr 2fr">
+  <div class="col"><div class="ch">Conversation 2 of 12 <small>secure chat, 25 March</small></div><pre class="s"><span class="who">Customer:</span> actually while i have you here
+<span class="who">Customer:</span> i might be going to visit my family in France this summer
+<span class="who">Customer:</span> <span class="hl">do i need to do anything for my card? my slate edge one</span>
+<span class="who">Agent (Beth):</span> That sounds like a wonderful trip! […] Yes, we always recommend setting a travel notice on your account before you go. […]
+<span class="who">Customer:</span> ok cool. i can do that.
+<span class="who">Customer:</span> and the card just works over there? like for buying stuff in a cafe or whatever
+<span class="who">Agent (Beth):</span> Yes, your Chase Slate Edge card (*4628) is on the Visa network, so it's accepted almost everywhere worldwide. For purchases, there are no foreign transaction fees […]</pre></div>
+  <div class="col"><div class="ch">Note written from it</div><pre class="s">I have a Chase Slate Edge credit card.</pre><div class="ft">Default topics. The travel plan and the agent's advice went into other notes or none.</div></div>
+
+  <div class="col"><div class="ch">Conversation 7 of 12 <small>phone call, 4 June</small></div><pre class="s"><span class="who">AGENT:</span> […] looking at my notes from our last call just now, we were right in the middle of activating your new replacement Chase Slate Edge card. Is that correct?
+<span class="who">CUSTOMER:</span> Yes, finally. My old one, it just… it completely fell apart. I was at the grocery store and it just… snapped.
+<span class="who">AGENT:</span> […] I just need you to confirm the last four digits of the new card number for me.
+<span class="who">CUSTOMER:</span> The new one, okay. It's… seven zero nine three.
+<span class="who">AGENT:</span> […] <span class="hl">I can confirm your new Chase Slate Edge card ending in *7093 is now fully activated</span> and ready for you to use.
+<span class="who">AGENT:</span> […] <span class="hl">your previous card, the one ending in *4628, has automatically been deactivated.</span></pre></div>
+  <div class="col"><div class="ch">The same note, rewritten</div><pre class="s">I have a Chase Slate Edge credit card ending in 7093, which replaced my old card ending in 4628.</pre><div class="ft">Memory Bank matched the call to the existing card note and rewrote it, rather than adding a second one. The five conversations in between were about other things and left this note alone.</div></div>
+</div>
+
+<p class="eyebrow">Overview</p>
+<h2>Three experiments</h2>
+<ul class="plain" style="max-width:680px">
+  <li><strong>1.</strong> A customer's history is mostly statements, payments and everyday purchases. Buried among them is the one record that explains why their card is being declined. Does Memory Bank's search still find it?</li>
+  <li><strong>2.</strong> After six months of calls, chats and emails, can the assistant answer questions about what was said in them, and how does that compare with reading the transcripts?</li>
+  <li><strong>3.</strong> Testing on a public benchmark.</li>
+</ul>
+
+<h2>Retrieval tests</h2>
+
+<section class="exp">
+  <h3>1. Retrieval with 30 records per customer</h3>
+  <div class="when">36 generated customers, padded to 30 records each</div>
+  <div class="parts">
+    <div class="pk">Summary</div>
+    <div class="pv"><p>Here the bank's records themselves are written into Memory Bank and searched. Real customers have years of routine ones. We grew each history from about 10 records to 30 by adding statements, payments, everyday purchases, logins and balance checks spread over the previous two to three years.</p></div>
+    <div class="pk">Input, expected, actual</div>
+    <div class="pv wide"><div class="iea">
+      <div class="col"><div class="ch">Input <small>4 of the 30 records for this customer</small></div><pre class="s"><span class="who">4 Sept 2026:</span> FRAUD VELOCITY &amp; STEP-UP ALERT: Concurrent session logins detected from Phoenix, AZ and Miami, FL within 7 minutes […] Automated containment placed Chase Ink Business Cash (*1791) on <span class="hl">SECURITY_LOCKED</span> restriction.</pre><pre class="s"><span class="who">4 Sept 2026:</span> INBOUND IVR CALL LOG: Customer called automated telephony banking regarding a declined $137.90 in-store POS transaction at H-E-B #603. Telephony system initiated SMS OTP two-factor verification […] <span class="hl">Call disconnected prior to passcode entry.</span> Verification incomplete; restriction on Chase Ink Business Cash (*1791) remains active.</pre><pre class="s"><span class="who">18 July 2026:</span> PURCHASE APPROVED: $65.80 online purchase at Blue Bottle Coffee (coffee) on Chase Ink Business Cash (*1791). Approved within normal spending pattern.</pre><pre class="s"><span class="who">23 June 2025:</span> AUTHORIZATION: Sweetgreen charged $81.27 to Chase Ink Business Cash (*1791) (chip). Approved; no alerts raised.</pre><p class="q" style="margin-top:10px">"I've had three declines in two days. Why?"</p></div>
+      <div class="col"><div class="ch">Expected</div><pre class="s">The fraud alert caused the lock, the dropped verification call left it in place, and the declines follow from it.</pre></div>
+      <div class="col"><div class="ch">Actual</div><div class="actual-list">
+        <div class="a"><div class="ah"><span>8 closest <small>(fraud alert not among them)</small></span><span class="chip mid">Incomplete</span></div><pre class="s">On September 4, 2026, a purchase of $137.90 at H-E-B #603 […] was declined. […] your call to our automated telephony system disconnected before the passcode could be entered. […] a restriction remained active […]</pre></div>
+        <div class="a"><div class="ah"><span>16 closest <small>(fraud alert included)</small></span><span class="chip ok">Right</span></div><pre class="s">The situation began on September 4, 2026, when our fraud detection system identified unusual activity. Specifically, concurrent session logins were detected from Phoenix, AZ and Miami, FL […] placed your Chase Ink Business Cash (*1791) card on a SECURITY_LOCKED restriction.</pre></div>
+      </div><div class="ft">The 8 handed over were the dropped call, the Tokyo wallet failure, an old Etsy false alarm, a mortgage inquiry, a finished Barcelona travel notice, the coffee purchase, the Sweetgreen charge and a routine branch visit. The fraud alert was not among them, so the answer starts the story one event too late.</div></div>
+    </div></div>
+    <div class="pk">Results</div>
+    <div class="pv wide">
+      <figure>
+        <div class="ftitle">Customers whose real problem the assistant identified, out of 36</div>
+        <div class="fsub">By how many records each customer has and how the shortlist is chosen</div>
+        <div id="c-exp3"></div>
+        <figcaption>With 8 records handed over, the explaining record was among them for 65% of customers. With 16, for 90%. Search took under 2 seconds either way. Every miss was an incomplete answer, never a wrong one.</figcaption>
+      </figure>
+    </div>
+    <div class="pk">What it means</div>
+    <div class="pv"><p><span class="verdict">Retrieval degrades as routine records pile up.</span> The explaining record was found for 35 of 36 customers with 10 records each, and 18 of 36 with 30.</p>
+    <p><span class="verdict">The search ranks by wording, not importance.</span> A vague question sounds as close to a coffee purchase as to a fraud alert. Memory Bank's retrieval is nearest wording with a fixed count. Anything smarter, such as rewriting the question, reranking or preferring recent records, is for us to add.</p></div>
+  </div>
+</section>
+
+<p class="eyebrow">Vocabulary</p>
+<h2>Memory setups compared</h2>
+<div class="legend-ways">
+  <div class="way"><div class="sw c-rec"></div><h3>Account profile</h3><p>The bank's own data on the customer: cards, disputes, contact details, fees. No conversation content. Always in the prompt.</p></div>
+  <div class="way"><div class="sw c-raw"></div><h3>Raw transcripts</h3><p>Conversations stored word for word; the 8 closest pages are handed over.</p></div>
+  <div class="way"><div class="sw c-mem"></div><h3>Memory Bank notes</h3><p>Short notes written by AI from each conversation, merged by subject.</p></div>
+  <div class="way"><div class="sw c-hist"></div><h3>Whole history</h3><p>Every conversation in the prompt, every time.</p></div>
+</div>
+
+<p class="eyebrow">Topics</p>
+<h2>What is a topic</h2>
+<p class="prose">A topic is an instruction to the note-writer about what to keep from a conversation. The two setups on this page differ only in their topics.</p>
+<div class="topics">
+  <div class="tcol"><h3>Default topics</h3><p class="tsub">The product's four standard topics, nothing configured.</p>
+    <ul>
+      <li><b>USER_PERSONAL_INFO</b> What the customer says about themselves.</li>
+      <li><b>USER_PREFERENCES</b> What the customer likes and how they want things done.</li>
+      <li><b>KEY_CONVERSATION_DETAILS</b> The main points of the conversation, from the customer's side.</li>
+      <li><b>EXPLICIT_INSTRUCTIONS</b> What the customer asks the assistant to remember or do.</li>
+    </ul></div>
+  <div class="tcol"><h3>Custom topics</h3><p class="tsub">The same four, plus three we wrote for banking conversations.</p>
+    <ul>
+      <li><b>ACCOUNT_STATE_EVENTS</b> Changes to the customer's cards or account, and what caused them, with exact dates and values.</li>
+      <li><b>ADVICE_AND_COMMITMENTS</b> What the bank told this customer and what it promised, and whether the promise was kept.</li>
+      <li><b>CONTACT_AND_CASES</b> The customer's contact details, case numbers and dispute status, with corrections resolved.</li>
+    </ul>
+    <details><summary>Full wording of the three custom topics</summary>
+      <p><b>ACCOUNT_STATE_EVENTS.</b> Changes to the state of the customer's cards, account or profile, and what caused them: card locks, holds, freezes, restrictions, closures, replacements and activations; declines with their reason codes; failed or incomplete verifications (OTP, KBA, step-up); travel notices created, cancelled or expired; mobile number, email and address changes. Always keep the date of the event, the card last-4 (for example *1791), the merchant, the amount, the city and the status or reason code exactly as written. When a value replaces an earlier one (a new phone number, a replacement card, a cancelled travel notice, a restriction lifted), record both the new current value and the earlier value it superseded, with the date of the change, so that the current value and the history are both preserved. Copy identifiers verbatim and in full: phone numbers as written (for example +1-512-555-1821, never 'a number ending in -1821'), card last-4 as *1234, amounts with cents, and merchant names in full. Each dated event is its own memory: never merge events with different timestamps into one memory, even when one caused the other; instead say in the later event's memory which earlier event it follows from. Update an existing memory only when a new event supersedes the same attribute (the phone number on file, the active card, the status of a travel notice, hold or restriction), and then keep the earlier value and its date in the updated memory.</p>
+      <p><b>ADVICE_AND_COMMITMENTS.</b> What the bank told the customer that applies to them, and what the bank promised to do. Includes: policies and terms explained for the customer's own card or situation (fees, rates, redemption rules, eligibility, what a card does or does not need), one-time courtesies granted and their conditions (for example a fee waived and how often that can be done), deadlines and windows given to the customer (when a credit becomes permanent, when a promotional rate ends, when they may ask again), and follow-ups promised (a callback, a letter, a fee reversal, an escalation) with who promised it and by when. Keep the date of the conversation, the exact values as said (amounts with cents, rates, point amounts, periods, dates) and resolve relative dates ('within ten business days', 'next Tuesday') to a calendar date while keeping the original wording. When a later agent corrects earlier advice, record the corrected value as current and keep the earlier value and its date as superseded. When a later conversation shows whether a promise was kept (the callback happened, the letter never arrived and was re-requested), record the outcome with its date. Generic information that was not applied to this customer (standard fee schedules read out, marketing, hold messages) is not a memory, and neither are hypotheticals the customer raised without acting on them.</p>
+      <p><b>CONTACT_AND_CASES.</b> The customer's contact details and open matters with the bank. Includes: email addresses, callback and landline numbers and which number the customer wants to be called on, with corrections resolved (a mistyped or misheard value that was corrected in the same conversation is not the customer's value; record only the corrected one); case, claim and reference numbers exactly as given; disputes with the merchant, amount, date and each change of status (opened, provisional credit, merchant response, resolved) with its date. When a contact detail replaces an earlier one, record the new value as current and keep the earlier value and the date of the change. Values that appear only in quoted older messages, or that belong to another person (a spouse, an authorised user), are not the customer's current details; say whose they are if they are recorded at all. Copy identifiers verbatim: full phone numbers, full email addresses, CASE-/DSP- numbers, amounts with cents.</p>
+    </details></div>
+</div>
+
+<h2 style="margin-top:56px">Conversation memory</h2>
+<p class="prose">Five customers, 12 conversations each over six months, by phone, chat, email and branch. Conversations were fed to Memory Bank turn by turn, marked customer or bank. Every answer also had the account profile.</p>
+
+<section class="exp">
+  <h3>2. Six months of conversations, 101 questions</h3>
+  <div class="parts">
+    <div class="pk">Which questions</div>
+    <div class="pv"><ul class="plain">
+      <li><strong>Type 1, promise kept?</strong> 10 questions. <em>"A supervisor was supposed to ring me about the dispute. I'm still waiting for that call."</em></li>
+      <li><strong>Type 2, never happened.</strong> 10 questions. <em>"I'm pretty sure I asked to have my credit limit decreased a while back."</em></li>
+      <li><strong>Type 3, briefing.</strong> 13 questions. <em>"What should I know about this customer: open issues, promises made, recent changes?"</em></li>
+      <li><strong>Type 4, dropped call.</strong> 5 questions. <em>"I was on the phone about my new card and we got cut off. When was it actually switched on?"</em></li>
+      <li><strong>Type 5, asked sideways.</strong> 3 questions. <em>"I called a few weeks ago because my payment wasn't on time. Could you offer the same kind of help?"</em></li>
+      <li><strong>Type 6, agent explanation.</strong> 60 questions. <em>"I asked a few weeks ago about the fee for an international ATM withdrawal. Can you remind me what it is?"</em></li>
+    </ul></div>
+
+    <div class="pk">Input and actual</div>
+    <div class="pv wide"><div class="iea two">
+      <div class="col"><div class="ch">Input <small>1 of the 12 conversations for this customer, a call on 12 April</small></div><pre class="s"><span class="who">AGENT:</span> Well, just as a helpful tip while we're on the topic, remember that if you use your Amazon Prime Visa card at an ATM overseas, it's treated as a cash advance. That comes with <span class="hl">a $12.00 fee per withdrawal</span> and <span class="hl">the interest starts accruing from day one at 30.24%</span>, so it's usually better to use it for purchases directly.
+<span class="who">CUSTOMER:</span> Oh, wow. Okay, that is good to know. Thank you. But back to this dispute…</pre><p class="q" style="margin-top:10px">Asked a few weeks later: "i asked a few weeks ago about the fee for an international atm withdrawal. can you remind me what it is?"</p></div>
+      <div class="col"><div class="ch">Actual</div><div class="actual-list">
+        <div class="a"><div class="ah"><span><i style="background:var(--rec)"></i>Account profile only</span><span class="chip mid">Half</span></div><pre class="s">The information available in your bank records does not specify a fee for an international ATM withdrawal. It does show a cash advance fee of $12.00 per transaction.</pre></div>
+        <div class="a"><div class="ah"><span><i style="background:var(--mem)"></i>Memory Bank, default topics</span><span class="chip no">Missed</span></div><pre class="s">Our records show a cash advance fee of $12.00 per transaction. However, the information available does not specify a separate fee for international ATM withdrawals or any potential foreign transaction fees.</pre><div class="ft" style="margin-top:6px">No note was written from the agent's line.</div></div>
+        <div class="a"><div class="ah"><span><i style="background:var(--mem)"></i>Memory Bank, custom topics</span><span class="chip ok">Right</span></div><pre class="s">On April 12, 2026, you were advised that using your Amazon Prime Visa card at an ATM overseas triggers a cash advance with a $12.00 fee per withdrawal. Additionally, interest accrues from day one at 30.24% on such transactions.</pre><div class="ft" style="margin-top:6px">The note: "On 2026-04-12, agent Keisha advised Ms. Park that using her Amazon Prime Visa card at an ATM overseas triggers a cash advance with a $12.00 fee per withdrawal and interest accruing from day one at 30.24%."</div></div>
+        <div class="a"><div class="ah"><span><i style="background:var(--hist)"></i>Whole history</span><span class="chip ok">Right</span></div><pre class="s">If you use your Amazon Prime Visa card for an international ATM withdrawal, it is treated as a cash advance. This incurs a $12.00 fee per transaction, and interest starts accruing from the transaction date at 30.24%.</pre></div>
+      </div></div>
+    </div></div>
+
+    <div class="pk">Results</div>
+    <div class="pv wide">
+      <div class="tscroll"><table class="res qt">
+        <thead><tr><th>Approach, always with the account profile in the prompt</th><th class="n">Type 1<small>promise kept, of 10</small></th><th class="n">Type 2<small>never happened, of 10</small></th><th class="n">Type 3<small>briefing, of 13</small></th><th class="n">Type 4<small>dropped call, of 5</small></th><th class="n">Type 5<small>asked sideways, of 3</small></th><th class="n">Type 6<small>agent explanation, of 60</small></th><th class="n">All 101</th><th class="n">Words read<small>per answer, approx.</small></th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip way"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--rec);margin-right:6px"></i>Account profile only</span><em>What the assistant knows without any memory.</em></td><td class="n worst">0</td><td class="n">10</td><td class="n worst">0</td><td class="n">1</td><td class="n">2</td><td class="n worst">3</td><td class="n worst">16</td><td class="n">500</td></tr>
+          <tr><td><span class="chip way"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--raw);margin-right:6px"></i>Profile + raw transcripts</span><em>The 8 closest pages of transcript, no AI at storage time.</em></td><td class="n">8</td><td class="n">10</td><td class="n">8</td><td class="n">5</td><td class="n">3</td><td class="n">51</td><td class="n">85</td><td class="n">3,100</td></tr>
+          <tr><td><span class="chip way"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--mem);margin-right:6px"></i>Profile + Memory Bank, default topics</span><em>The product's standard setup, nothing configured.</em></td><td class="n worst">4</td><td class="n">10</td><td class="n">10</td><td class="n">4</td><td class="n">3</td><td class="n worst">3</td><td class="n">34</td><td class="n">870</td></tr>
+          <tr><td><span class="chip way"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--mem);margin-right:6px"></i>Profile + Memory Bank, custom topics</span><em>The default four plus three we wrote. Fed turn by turn with roles.</em></td><td class="n">9</td><td class="n">10</td><td class="n">7</td><td class="n">5</td><td class="n">3</td><td class="n best">57</td><td class="n">91</td><td class="n">1,300</td></tr>
+          <tr><td><span class="chip way"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--mem);margin-right:6px"></i>Profile + Memory Bank, custom topics + logged promises</span><em>The same, plus each conversation's promises written in as separate "Agent action" notes.</em></td><td class="n">9</td><td class="n">10</td><td class="n">6</td><td class="n">5</td><td class="n">3</td><td class="n">53</td><td class="n">86</td><td class="n">1,400</td></tr>
+          <tr><td><span class="chip way"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--mem);margin-right:6px"></i>Profile + Memory Bank, custom topics, fed as one block</span><em>Each conversation sent to Memory Bank as one piece of text in a single call, with no marking of who spoke. The turn-by-turn rows send each line separately, tagged customer or bank.</em></td><td class="n best">10</td><td class="n">10</td><td class="n">9</td><td class="n">4</td><td class="n">3</td><td class="n best">58</td><td class="n best">94</td><td class="n">1,300</td></tr>
+          <tr class="total"><td><span class="chip way"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--hist);margin-right:6px"></i>Profile + whole history</span><em>The ceiling. Everything in the prompt, every time.</em></td><td class="n best">10</td><td class="n">10</td><td class="n best">11</td><td class="n">5</td><td class="n">3</td><td class="n">53</td><td class="n">92</td><td class="n">14,000</td></tr>
+        </tbody>
+      </table></div>
+      <figcaption>Words read are worked out from the average prompt length. Type 2 scores 10 of 10 everywhere, even with no memory, because "there is no record of this" is what the assistant says when it finds nothing. The one-block row is from a separate run on the same questions, so note wording differs between runs as well as feeding method. Each row is a single run, so a gap of a few questions between memory rows means nothing.</figcaption>
+    </div>
+    <div class="pk">What it means</div>
+    <div class="pv"><p><span class="verdict">Memory adds value.</span> Without it the assistant answers 16 of the 101. With Memory Bank notes on custom topics beside the account profile it answers 91, one short of reading the whole history, at a tenth of the reading. Raw transcripts answer 85 and read more than twice as much.</p>
+    <p><span class="verdict">The topics decide what is kept from the bank's side.</span> Default topics answer 34. They do not store what an agent explained, which costs almost all of type 6, and they drop the customer's later report that a promise was kept, which costs 6 of the 10 type 1 questions. Custom topics keep both.</p>
+    <p><span class="verdict">Feeding turn by turn works as described and scores the same as one block.</span> 91 against 94 is inside single-run noise. Logging promises as separate notes added nothing on custom topics, and has not been tried on default topics, which is the recommended pairing.</p></div>
+
+  </div>
+</section>
+
+<p class="eyebrow">External benchmark</p>
+<h2>LongMemEval</h2>
+
+<section class="exp">
+  <h3>3. Nine questions, default topics</h3>
+  <div class="when">Questions from LongMemEval, Google's default topics, sessions fed turn by turn with roles. Memory Bank answered 5 of 9; reading every session answered 8.</div>
+  <p class="prose" style="margin-top:14px">A public test of long-term chat memory, run to check that the findings are not peculiar to banking. Each answer is buried among about 45 earlier chat sessions. The three misses below are shown from what the user said, to what the note kept, to what the assistant then answered.</p>
+
+  <div class="parts" style="margin-top:18px">
+    <div class="pk">1. Date precision lost</div>
+    <div class="pv wide"><div class="iea">
+      <div class="col"><div class="ch">Said</div><pre class="s"><span class="who">USER, 01:50:</span> I just joined a new book club group called "Page Turners" <span class="hl">last week</span>, where we discuss our favorite novels.
+<span class="who">USER, 05:43:</span> I've been engaging with a group called "Marketing Professionals" on LinkedIn since I joined it <span class="hl">yesterday</span>.</pre><p class="q" style="margin-top:10px">"Which group did I join first, 'Page Turners' or 'Marketing Professionals'?"</p></div>
+      <div class="col"><div class="ch">Stored <span class="chip mid">One date lost</span></div><pre class="s">I joined a book club called 'Page Turners' <span class="hl">in May 2023</span>, where I have participated in discussions for 'The Nightingale' and 'The Hate U Give' […]</pre><pre class="s">I joined a LinkedIn group called 'Marketing Professionals' <span class="hl">on May 24, 2023</span>, where we discuss industry trends and share resources […]</pre></div>
+      <div class="col"><div class="ch">Answered <span class="chip no">Wrong</span></div><pre class="s">I don't know which group you joined first. You joined 'Marketing Professionals' on May 24, 2023, and 'Page Turners' sometime in May 2023, but a specific date for 'Page Turners' is not provided.</pre></div>
+    </div></div>
+
+    <div class="pk">2. Fact reworded</div>
+    <div class="pv wide"><div class="iea">
+      <div class="col"><div class="ch">Said</div><pre class="s"><span class="who">USER, 00:37:</span> I just canceled my Forbes magazine subscription in early March […] but I've been enjoying other publications like The New Yorker, which I subscribed to in early February.
+<span class="who">USER, 04:47:</span> By the way, <span class="hl">I'm also getting Architectural Digest</span>, which I love for home decor inspiration.</pre><p class="q" style="margin-top:10px">"How many magazine subscriptions do I currently have?"</p></div>
+      <div class="col"><div class="ch">Stored <span class="chip mid">Meaning changed</span></div><pre class="s">I subscribed to The New Yorker in early February 2023 and enjoy it […] but I canceled my Forbes magazine subscription in early March 2023 […]</pre><pre class="s">I prefer the Mid-Century Modern style for my interior design and <span class="hl">love Architectural Digest magazine</span> for home decor inspiration […]</pre></div>
+      <div class="col"><div class="ch">Answered <span class="chip no">Wrong</span></div><pre class="s">You currently have one magazine subscription: The New Yorker.</pre></div>
+    </div></div>
+
+    <div class="pk">3. Retrieval miss</div>
+    <div class="pv wide"><div class="iea">
+      <div class="col"><div class="ch">Said</div><pre class="s"><span class="who">USER:</span> I'm still not sure about the keyboards, but I was thinking about my ukulele lessons. <span class="hl">I just started taking ukulele lessons with my friend Rachel today</span> and it's been really fun so far.</pre><p class="q" style="margin-top:10px">"What did I do with Rachel on the Wednesday two months ago?"</p></div>
+      <div class="col"><div class="ch">Stored <span class="chip mid">Buried in a merge</span></div><pre class="s">I play the guitar, owning a Yamaha FG800, a Taylor GS Mini, and a Fender Mustang I V2 amplifier. I had my Taylor GS Mini serviced by Joe […] want to explore effects pedals […] <span class="hl">I also play the ukulele, having started lessons with my friend Rachel on February 1, 2023</span>, though I find fingerpicking challenging.</pre><pre class="s">I have a group member named Rachel with whom I collaborate on my research.</pre></div>
+      <div class="col"><div class="ch">Answered <span class="chip no">Wrong</span></div><pre class="s">I don't know what you did with Rachel on the Wednesday two months ago. I only know that you collaborate on your research with her.</pre></div>
+    </div></div>
+  </div>
+</section>
+
+</div>
+
+<div id="tip" role="tooltip"></div>
+
+<script>
+(function () {
+  var tip = document.getElementById('tip');
+  function showTip(e, text) { tip.textContent = text; tip.classList.add('on'); moveTip(e); }
+  function moveTip(e) { var x = e.clientX + 14, y = e.clientY + 14; if (x + 290 > window.innerWidth) x = e.clientX - 294; tip.style.left = x + 'px'; tip.style.top = y + 'px'; }
+  function hideTip() { tip.classList.remove('on'); }
+  function el(n, a) { var e = document.createElementNS('http://www.w3.org/2000/svg', n); for (var k in a) e.setAttribute(k, a[k]); return e; }
+  function txt(x, y, s, cls, anchor) { var t = el('text', { x: x, y: y, 'class': cls || '', 'text-anchor': anchor || 'start', 'dominant-baseline': 'middle' }); t.textContent = s; return t; }
+  var C = { mem: 'var(--mem)', rec: 'var(--rec)', raw: 'var(--raw)', hist: 'var(--hist)', mut: 'var(--axis)' };
+
+  // rows: [{label, values:[{v, color, text, tip}]}]; opts: {max, ticks, unit, labelW, ceiling}
+  function hbar(id, rows, opts) {
+    var host = document.getElementById(id); if (!host) return;
+    var W = 640, labelW = opts.labelW || 230, valW = 70, plotW = W - labelW - valW;
+    var barH = 14, gap = 3, groupGap = 12, y = 6;
+    var nSeries = rows[0].values.length, rowH = nSeries * barH + (nSeries - 1) * gap;
+    var H = y + rows.length * (rowH + groupGap) + 14;
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': opts.aria || '' });
+    var max = opts.max;
+    (opts.ticks || []).forEach(function (t) {
+      var x = labelW + (t / max) * plotW;
+      svg.appendChild(el('line', { x1: x, y1: 2, x2: x, y2: H - 12, 'class': 'grid' }));
+      svg.appendChild(txt(x, H - 4, opts.unit === '%' ? t + '%' : String(t), 'mut', 'middle'));
+    });
+    if (opts.ceiling != null) {
+      var cx = labelW + (opts.ceiling / max) * plotW;
+      svg.appendChild(el('line', { x1: cx, y1: 2, x2: cx, y2: H - 12, 'class': 'ceil' }));
+    }
+    rows.forEach(function (r) {
+      svg.appendChild(txt(labelW - 10, y + rowH / 2, r.label, 'lab', 'end'));
+      r.values.forEach(function (v, i) {
+        var by = y + i * (barH + gap), len = Math.max(0, (v.v / max) * plotW);
+        svg.appendChild(el('rect', { x: labelW, y: by, width: len, height: barH, fill: v.color, rx: 2 }));
+        svg.appendChild(txt(labelW + len + 8, by + barH / 2, v.text || (opts.unit === '%' ? v.v + '%' : String(v.v)), 'val'));
+        var hit = el('rect', { x: labelW - 4, y: by - 2, width: plotW + valW, height: barH + 4, fill: 'transparent' });
+        hit.addEventListener('mouseenter', function (e) { showTip(e, v.tip || (r.label + ': ' + (v.text || v.v))); });
+        hit.addEventListener('mousemove', moveTip); hit.addEventListener('mouseleave', hideTip);
+        svg.appendChild(hit);
+      });
+      y += rowH + groupGap;
+    });
+    host.appendChild(svg);
+  }
+
+
+  hbar('c-exp3', [
+    { label: 'About 10 records, 8 closest', values: [{ v: 35, color: C.mem, text: '35 of 36' }] },
+    { label: 'About 10 records, similarity cut-off', values: [{ v: 8, color: C.mut, text: '8 of 36', tip: 'Records below a fixed similarity bar are dropped; most customers got none' }] },
+    { label: '30 records, 8 closest', values: [{ v: 18, color: C.mem, text: '18 of 36', tip: 'Explaining record retrieved for 65% of customers' }] },
+    { label: '30 records, 16 closest', values: [{ v: 31, color: C.mem, text: '31 of 36', tip: 'Explaining record retrieved for 90% of customers' }] }
+  ], { max: 36, ticks: [0, 9, 18, 27, 36], aria: 'Customers whose real problem was identified, with 30 records each' });
+
+
+})();
+</script>
+
+</body></html>
